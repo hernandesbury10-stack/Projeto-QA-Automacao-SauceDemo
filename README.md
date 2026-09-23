@@ -1,12 +1,19 @@
 # Projeto QA Automação - SauceDemo
 
-Projeto prático de **Automação de Testes Web** desenvolvido com Java, Selenium WebDriver, JUnit 5 e Maven, aplicado à aplicação SauceDemo.
+Projeto prático de automação de testes web desenvolvido com Java, Selenium WebDriver, JUnit 5 e Maven, aplicado à plataforma SauceDemo.
 
-## Objetivo
+## 🎯 Objetivo
 
-Automatizar cenários funcionais da aplicação, validando fluxos de login, produtos, carrinho e checkout.
+Automatizar cenários funcionais da aplicação, validando os principais fluxos de utilização:
 
-## Tecnologias utilizadas
+- Login
+- Produtos
+- Carrinho
+- Checkout
+
+O projeto foi desenvolvido com foco na aplicação de práticas de automação de testes, organização do código e execução de cenários funcionais.
+
+## 🛠️ Tecnologias utilizadas
 
 - Java
 - Selenium WebDriver
@@ -15,14 +22,13 @@ Automatizar cenários funcionais da aplicação, validando fluxos de login, prod
 - Google Chrome
 - IntelliJ IDEA
 
-## Estrutura do projeto
+## 📁 Estrutura do projeto
 
 ```text
 src/
 └── test/
     └── java/
         └── br.com.hernandesbury.tests.pages/
-            ├── LoginTest.java
             ├── LoginPage.java
-            ├── ProductsPage.java
-            └── pages/
+            ├── LoginTest.java
+            └── ProductsPage.java
