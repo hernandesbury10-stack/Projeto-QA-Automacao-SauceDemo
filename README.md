@@ -33,6 +33,7 @@ src/
             ├── LoginTest.java
             └── ProductsPage.java
 
+```
 ## Evidências da execução
 
 Execução dos testes automatizados no IntelliJ IDEA:
