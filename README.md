@@ -32,3 +32,10 @@ src/
             ├── LoginPage.java
             ├── LoginTest.java
             └── ProductsPage.java
+
+
+## 📊 Evidências da execução
+
+Execução dos testes automatizados no IntelliJ IDEA:
+
+![Evidência da execução dos testes](evidencia-execucao-testes.png)
