@@ -5,9 +5,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-
-import br.com.hernandesbury.tests.pages.LoginPage;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -16,44 +19,151 @@ public class LoginTest {
     private WebDriver driver;
     private LoginPage loginPage;
     private ProductsPage productsPage;
+    private WebDriverWait wait;
 
     @BeforeEach
     void setUp() {
         driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
         loginPage = new LoginPage(driver);
         productsPage = new ProductsPage(driver);
+
         driver.get("https://www.saucedemo.com/");
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("user-name")
+        ));
     }
+
+    // =========================
+    // MÉTODOS AUXILIARES
+    // =========================
+
+    private void realizarLoginComSucesso() {
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("user-name")
+        )).sendKeys("standard_user");
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("password")
+        )).sendKeys("secret_sauce");
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("login-button")
+        )).click();
+
+        wait.until(ExpectedConditions.urlContains("inventory.html"));
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.className("inventory_list")
+        ));
+    }
+
+    private void adicionarBackpackAoCarrinho() {
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("add-to-cart-sauce-labs-backpack")
+        )).click();
+    }
+
+    private void acessarCarrinho() {
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.className("shopping_cart_link")
+        )).click();
+
+        wait.until(ExpectedConditions.urlContains("cart.html"));
+    }
+
+    private void acessarCheckout() {
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("checkout")
+        )).click();
+
+        wait.until(ExpectedConditions.urlContains("checkout-step-one.html"));
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("first-name")
+        ));
+    }
+
+    private void preencherCheckout() {
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("first-name")
+        )).sendKeys("Hernandes");
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("last-name")
+        )).sendKeys("Bury");
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("postal-code")
+        )).sendKeys("44380-000");
+    }
+
+    // =========================
+    // LOGIN
+    // =========================
 
     @Test
     void deveRealizarLoginComCredenciaisValidas() {
+
         loginPage.preencherUsername("standard_user");
         loginPage.preencherPassword("secret_sauce");
         loginPage.clicarLogin();
+
+        wait.until(ExpectedConditions.urlContains("inventory.html"));
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.className("inventory_list")
+        ));
+
         assertEquals(
                 "Products",
                 productsPage.obterTitulo()
         );
     }
 
-        @Test
-        void deveAcessarDetalhesDoProduto() {
+    @Test
+    void deveAcessarDetalhesDoProduto() {
 
-            loginPage.preencherUsername("standard_user");
-            loginPage.preencherPassword("secret_sauce");
-            loginPage.clicarLogin();
+        realizarLoginComSucesso();
 
-            productsPage.acessarBackpack();
-        }
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("item_4_title_link")
+        )).click();
 
+        wait.until(ExpectedConditions.urlContains("inventory-item.html"));
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.className("inventory_details_name")
+        ));
+    }
 
     @Test
     void deveImpedirLoginComCredenciaisInvalidas() {
-        loginPage.preencherUsername("usuario_invalido");
-        loginPage.preencherPassword("senha_invalida");
-        loginPage.clicarLogin();
 
-        String mensagemErro = driver.findElement(By.cssSelector("[data-test='error']")).getText();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("user-name")
+        )).sendKeys("usuario_invalido");
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("password")
+        )).sendKeys("senha_invalida");
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("login-button")
+        )).click();
+
+        String mensagemErro = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.cssSelector("[data-test='error']")
+                )
+        ).getText();
 
         assertEquals(
                 "Epic sadface: Username and password do not match any user in this service",
@@ -63,9 +173,16 @@ public class LoginTest {
 
     @Test
     void deveImpedirLoginSemPreencherOsCampos() {
-        loginPage.clicarLogin();
 
-        String mensagemErro = driver.findElement(By.cssSelector("[data-test='error']")).getText();
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("login-button")
+        )).click();
+
+        String mensagemErro = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.cssSelector("[data-test='error']")
+                )
+        ).getText();
 
         assertEquals(
                 "Epic sadface: Username is required",
@@ -75,10 +192,20 @@ public class LoginTest {
 
     @Test
     void deveImpedirLoginSomenteComUsername() {
-        loginPage.preencherUsername("standard_user");
-        loginPage.clicarLogin();
 
-        String mensagemErro = driver.findElement(By.cssSelector("[data-test='error']")).getText();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("user-name")
+        )).sendKeys("standard_user");
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("login-button")
+        )).click();
+
+        String mensagemErro = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.cssSelector("[data-test='error']")
+                )
+        ).getText();
 
         assertEquals(
                 "Epic sadface: Password is required",
@@ -88,10 +215,20 @@ public class LoginTest {
 
     @Test
     void deveImpedirLoginSomenteComPassword() {
-        loginPage.preencherPassword("secret_sauce");
-        loginPage.clicarLogin();
 
-        String mensagemErro = driver.findElement(By.cssSelector("[data-test='error']")).getText();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("password")
+        )).sendKeys("secret_sauce");
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("login-button")
+        )).click();
+
+        String mensagemErro = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.cssSelector("[data-test='error']")
+                )
+        ).getText();
 
         assertEquals(
                 "Epic sadface: Username is required",
@@ -99,124 +236,206 @@ public class LoginTest {
         );
     }
 
+    // =========================
+    // PRODUTOS
+    // =========================
+
     @Test
     void deveExibirProdutosDisponiveis() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        int quantidadeProdutos = driver.findElements(By.className("inventory_item")).size();
+        realizarLoginComSucesso();
+
+        int quantidadeProdutos = wait.until(
+                ExpectedConditions.presenceOfAllElementsLocatedBy(
+                        By.className("inventory_item")
+                )
+        ).size();
 
         assertEquals(6, quantidadeProdutos);
     }
 
     @Test
     void deveOrdenarProdutosPorNome() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.className("product_sort_container"))
-                .click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.cssSelector("option[value='az']"))
-                .click();
+        Select ordenacao = new Select(
+                wait.until(ExpectedConditions.elementToBeClickable(
+                        By.className("product_sort_container")
+                ))
+        );
 
-        String primeiroProduto = driver.findElements(By.className("inventory_item_name"))
-                .get(0).getText();
+        ordenacao.selectByValue("az");
 
-        assertEquals("Sauce Labs Backpack", primeiroProduto);
+        String primeiroProduto = wait.until(
+                ExpectedConditions.visibilityOfAllElementsLocatedBy(
+                        By.className("inventory_item_name")
+                )
+        ).get(0).getText();
+
+        assertEquals(
+                "Sauce Labs Backpack",
+                primeiroProduto
+        );
     }
 
     @Test
     void deveOrdenarProdutosPorPreco() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.className("product_sort_container")).click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.cssSelector("option[value='lohi']")).click();
+        Select ordenacao = new Select(
+                wait.until(ExpectedConditions.elementToBeClickable(
+                        By.className("product_sort_container")
+                ))
+        );
 
-        String primeiroPreco = driver.findElements(By.className("inventory_item_price"))
-                .get(0).getText();
+        ordenacao.selectByValue("lohi");
 
-        assertEquals("$7.99", primeiroPreco);
+        String primeiroPreco = wait.until(
+                ExpectedConditions.visibilityOfAllElementsLocatedBy(
+                        By.className("inventory_item_price")
+                )
+        ).get(0).getText();
+
+        assertEquals(
+                "$7.99",
+                primeiroPreco
+        );
     }
 
     @Test
     void deveExibirDetalhesDoProduto() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("item_4_title_link")).click();
+        realizarLoginComSucesso();
 
-        String nomeProduto = driver.findElement(By.className("inventory_details_name")).getText();
-        String descricao = driver.findElement(By.className("inventory_details_desc")).getText();
-        String preco = driver.findElement(By.className("inventory_details_price")).getText();
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("item_4_title_link")
+        )).click();
 
-        assertEquals("Sauce Labs Backpack", nomeProduto);
-        assertEquals("$29.99", preco);
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.className("inventory_details_name")
+        ));
 
-        assertEquals(false, descricao.isEmpty());
+        String nomeProduto = driver.findElement(
+                By.className("inventory_details_name")
+        ).getText();
+
+        String descricao = driver.findElement(
+                By.className("inventory_details_desc")
+        ).getText();
+
+        String preco = driver.findElement(
+                By.className("inventory_details_price")
+        ).getText();
+
+        assertEquals(
+                "Sauce Labs Backpack",
+                nomeProduto
+        );
+
+        assertEquals(
+                "$29.99",
+                preco
+        );
+
+        assertEquals(
+                false,
+                descricao.isEmpty()
+        );
     }
+
+    // =========================
+    // CARRINHO
+    // =========================
 
     @Test
     void deveAdicionarProdutoAoCarrinho() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("add-to-cart-sauce-labs-backpack")).click();
+        realizarLoginComSucesso();
 
-        String quantidade = driver.findElement(By.className("shopping_cart_badge")).getText();
+        adicionarBackpackAoCarrinho();
 
-        assertEquals("1", quantidade);
+        String quantidade = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.className("shopping_cart_badge")
+                )
+        ).getText();
+
+        assertEquals(
+                "1",
+                quantidade
+        );
     }
 
     @Test
     void deveAdicionarMultiplosProdutosAoCarrinho() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("add-to-cart-sauce-labs-backpack")).click();
-        driver.findElement(By.id("add-to-cart-sauce-labs-bolt-t-shirt")).click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.className("shopping_cart_link")).click();
+        adicionarBackpackAoCarrinho();
 
-        int quantidadeProdutos = driver.findElements(By.className("cart_item")).size();
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("add-to-cart-sauce-labs-bolt-t-shirt")
+        )).click();
 
-        assertEquals(2, quantidadeProdutos);
+        acessarCarrinho();
+
+        int quantidadeProdutos = wait.until(
+                ExpectedConditions.presenceOfAllElementsLocatedBy(
+                        By.className("cart_item")
+                )
+        ).size();
+
+        assertEquals(
+                2,
+                quantidadeProdutos
+        );
     }
 
     @Test
     void deveRemoverProdutoDoCarrinho() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("add-to-cart-sauce-labs-backpack")).click();
-        driver.findElement(By.className("shopping_cart_link")).click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.id("remove-sauce-labs-backpack")).click();
+        adicionarBackpackAoCarrinho();
 
-        int quantidadeProdutos = driver.findElements(By.className("cart_item")).size();
+        acessarCarrinho();
 
-        assertEquals(0, quantidadeProdutos);
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("remove-sauce-labs-backpack")
+        )).click();
+
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(
+                By.className("cart_item")
+        ));
+
+        int quantidadeProdutos = driver.findElements(
+                By.className("cart_item")
+        ).size();
+
+        assertEquals(
+                0,
+                quantidadeProdutos
+        );
     }
 
     @Test
     void deveContinuarComprandoAposAcessarCarrinho() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("add-to-cart-sauce-labs-backpack")).click();
-        driver.findElement(By.className("shopping_cart_link")).click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.id("continue-shopping")).click();
+        adicionarBackpackAoCarrinho();
+
+        acessarCarrinho();
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("continue-shopping")
+        )).click();
+
+        wait.until(ExpectedConditions.urlContains(
+                "inventory.html"
+        ));
 
         assertEquals(
                 "https://www.saucedemo.com/inventory.html",
@@ -224,19 +443,30 @@ public class LoginTest {
         );
     }
 
+    // =========================
+    // CHECKOUT
+    // =========================
+
     @Test
     void deveImpedirCheckoutSemPreenchimento() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("add-to-cart-sauce-labs-backpack")).click();
-        driver.findElement(By.className("shopping_cart_link")).click();
-        driver.findElement(By.id("checkout")).click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.id("continue")).click();
+        adicionarBackpackAoCarrinho();
 
-        String mensagemErro = driver.findElement(By.cssSelector("[data-test='error']")).getText();
+        acessarCarrinho();
+
+        acessarCheckout();
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("continue")
+        )).click();
+
+        String mensagemErro = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.cssSelector("[data-test='error']")
+                )
+        ).getText();
 
         assertEquals(
                 "Error: First Name is required",
@@ -246,18 +476,28 @@ public class LoginTest {
 
     @Test
     void deveImpedirCheckoutSomenteComFirstName() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("add-to-cart-sauce-labs-backpack")).click();
-        driver.findElement(By.className("shopping_cart_link")).click();
-        driver.findElement(By.id("checkout")).click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.id("first-name")).sendKeys("Hernandes");
-        driver.findElement(By.id("continue")).click();
+        adicionarBackpackAoCarrinho();
 
-        String mensagemErro = driver.findElement(By.cssSelector("[data-test='error']")).getText();
+        acessarCarrinho();
+
+        acessarCheckout();
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("first-name")
+        )).sendKeys("Hernandes");
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("continue")
+        )).click();
+
+        String mensagemErro = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.cssSelector("[data-test='error']")
+                )
+        ).getText();
 
         assertEquals(
                 "Error: Last Name is required",
@@ -267,71 +507,127 @@ public class LoginTest {
 
     @Test
     void deveAceitarPreenchimentoDoLastName() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("add-to-cart-sauce-labs-backpack")).click();
-        driver.findElement(By.className("shopping_cart_link")).click();
-        driver.findElement(By.id("checkout")).click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.id("first-name")).sendKeys("Hernandes");
-        driver.findElement(By.id("last-name")).sendKeys("Bury");
+        adicionarBackpackAoCarrinho();
 
-        String firstName = driver.findElement(By.id("first-name")).getAttribute("value");
+        acessarCarrinho();
 
-        assertEquals("Hernandes", firstName);
+        acessarCheckout();
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("first-name")
+        )).sendKeys("Hernandes");
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("last-name")
+        )).sendKeys("Bury");
+
+        String firstName = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.id("first-name")
+                )
+        ).getAttribute("value");
+
+        assertEquals(
+                "Hernandes",
+                firstName
+        );
     }
 
     @Test
     void deveAvancarParaRevisaoComDadosValidos() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("add-to-cart-sauce-labs-backpack")).click();
-        driver.findElement(By.className("shopping_cart_link")).click();
-        driver.findElement(By.id("checkout")).click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.id("first-name")).sendKeys("Hernandes");
-        driver.findElement(By.id("last-name")).sendKeys("Bury");
-        driver.findElement(By.id("postal-code")).sendKeys("44380-000");
-        driver.findElement(By.id("continue")).click();
+        adicionarBackpackAoCarrinho();
+
+        acessarCarrinho();
+
+        acessarCheckout();
+
+        preencherCheckout();
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("continue")
+        )).click();
+
+        wait.until(ExpectedConditions.urlContains(
+                "checkout-step-two.html"
+        ));
 
         assertEquals(
                 "https://www.saucedemo.com/checkout-step-two.html",
                 driver.getCurrentUrl()
         );
 
-        String nomeProduto = driver.findElement(By.className("inventory_item_name")).getText();
+        String nomeProduto = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.className("inventory_item_name")
+                )
+        ).getText();
 
-        assertEquals("Sauce Labs Backpack", nomeProduto);
+        assertEquals(
+                "Sauce Labs Backpack",
+                nomeProduto
+        );
     }
 
     @Test
     void deveFinalizarCompraComSucesso() {
-        driver.findElement(By.id("user-name")).sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
-        driver.findElement(By.id("login-button")).click();
 
-        driver.findElement(By.id("add-to-cart-sauce-labs-backpack")).click();
-        driver.findElement(By.className("shopping_cart_link")).click();
-        driver.findElement(By.id("checkout")).click();
+        realizarLoginComSucesso();
 
-        driver.findElement(By.id("first-name")).sendKeys("Hernandes");
-        driver.findElement(By.id("last-name")).sendKeys("Bury");
-        driver.findElement(By.id("postal-code")).sendKeys("44380-000");
-        driver.findElement(By.id("continue")).click();
+        adicionarBackpackAoCarrinho();
 
-        driver.findElement(By.id("finish")).click();
+        acessarCarrinho();
 
-        String mensagem = driver.findElement(By.className("complete-header")).getText();
+        acessarCheckout();
 
-        assertEquals("Thank you for your order!", mensagem);
+        preencherCheckout();
+
+        WebElement botaoContinue = wait.until(
+                ExpectedConditions.elementToBeClickable(By.id("continue"))
+        );
+
+        botaoContinue.click();
+
+        wait.until(ExpectedConditions.urlContains("checkout-step-two.html"));
+
+        wait.until(ExpectedConditions.urlContains(
+                "checkout-step-two.html"
+        ));
+
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.id("finish")
+        )).click();
+
+        wait.until(ExpectedConditions.urlContains(
+                "checkout-complete.html"
+        ));
+
+        String mensagem = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.className("complete-header")
+                )
+        ).getText();
+
+        assertEquals(
+                "Thank you for your order!",
+                mensagem
+        );
     }
+
+    // =========================
+    // ENCERRAMENTO
+    // =========================
 
     @AfterEach
     void tearDown() {
-        driver.quit();
+
+        if (driver != null) {
+            driver.quit();
+        }
     }
 }
